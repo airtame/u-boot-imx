@@ -52,6 +52,7 @@
 
 #define CONFIG_CMD_BMODE
 #define CONFIG_CMD_SETEXPR
+#define CONFIG_CMD_GETTIME
 
 #define CONFIG_BOOTDELAY		3
 
@@ -74,6 +75,16 @@
 #define CONFIG_CMD_EXT2
 #define CONFIG_CMD_FAT
 #define CONFIG_DOS_PARTITION
+
+/* LED */
+#define CONFIG_STATUS_LED
+#define CONFIG_BOARD_SPECIFIC_LED
+#define CONFIG_CMD_LED
+
+#define STATUS_LED_BIT 1 
+#define STATUS_LED_BOOT 0
+#define STATUS_LED_STATE STATUS_LED_ON
+#define STATUS_LED_PERIOD (CONFIG_SYS_HZ / 1)
 
 /* Memory test */
 #define CONFIG_CMD_MEMTEST
@@ -137,9 +148,11 @@
 			"fi;" \
 		"fi\0" \
 	"mmcinit=" \
+        "led 0 toggle;" \
 		"mmc dev ${mmcdev};" \
 		"if mmc rescan;then " \
 			"setenv bootcmd run mmcboot;" \
+            "led 0 toggle;" \
 			"if ${load} mmc ${mmcdev}:${mmcpart} ${loadaddr} ${environment};then " \
 				"echo Loading ${environment}..;" \
 				"env import -t ${loadaddr} ${filesize};" \
@@ -150,9 +163,12 @@
 			"false;" \
 		"fi\0" \
 	"mmcboot=" \
+        "led 0 toggle;" \
 		"run fixenv;" \
 		"if ${load} mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${devicetree};then " \
+            "led 0 toggle;" \
 			"if ${load} mmc ${mmcdev}:${mmcpart} ${loadaddr} ${linux};then " \
+                "led 0 toggle;" \
 				"if test -n ${initrd};then " \
 					"if ${load} mmc ${mmcdev}:${mmcpart} ${initrd_addr} ${initrd};then " \
 						"bootz ${loadaddr} ${initrd_addr}:${filesize} ${fdt_addr};" \
