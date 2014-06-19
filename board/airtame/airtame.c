@@ -43,10 +43,6 @@ DECLARE_GLOBAL_DATA_PTR;
 	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm | PAD_CTL_HYS |	\
 	PAD_CTL_ODE | PAD_CTL_SRE_FAST)
 
-//#define USDHC1_CD_GPIO		IMX_GPIO_NR(1, 2)
-//#define USDHC3_CD_GPIO		IMX_GPIO_NR(3, 9)
-#define ETH_PHY_RESET		IMX_GPIO_NR(3, 29)
-
 int dram_init(void)
 {
 	gd->ram_size = (phys_size_t)CONFIG_DDR_MB * 1024 * 1024;
@@ -76,21 +72,6 @@ static void setup_iomux_uart(void)
 static struct fsl_esdhc_cfg usdhc_cfg[1] = {
 	{USDHC3_BASE_ADDR},
 };
-/*
-int board_mmc_getcd(struct mmc *mmc)
-{
-	struct fsl_esdhc_cfg *cfg = (struct fsl_esdhc_cfg *)mmc->priv;
-	int ret = 0;
-
-	switch (cfg->esdhc_base) {
-	case USDHC3_BASE_ADDR:
-		ret = !gpio_get_value(USDHC3_CD_GPIO);
-		break;
-	}
-
-	return ret;
-}
-*/
 
 int board_mmc_init(bd_t *bis)
 {
@@ -100,8 +81,7 @@ int board_mmc_init(bd_t *bis)
 	/*
 	 * Following map is done:
 	 * (U-boot device node)    (Physical Port)
-	 * mmc0                    SOM MicroSD
-	 * mmc1                    Carrier board MicroSD
+	 * mmc0                    On-board microSD slot
 	 */
 
 	for (index = 0; index < CONFIG_SYS_FSL_USDHC_NUM; ++index) {
@@ -111,7 +91,6 @@ int board_mmc_init(bd_t *bis)
 				usdhc3_pads, ARRAY_SIZE(usdhc3_pads));
 			usdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC3_CLK);
 			usdhc_cfg[0].max_bus_width = 4;
-			//gpio_direction_input(USDHC3_CD_GPIO);
 			break;
 		default:
 			printf("Warning: you configured more USDHC controllers"
@@ -134,6 +113,23 @@ int board_phy_config(struct phy_device *phydev)
 }
 
 #if defined(CONFIG_VIDEO_IPUV3)
+struct i2c_pads_info i2c2_pad_info = {
+    .scl = {
+        .i2c_mode = MX6_PAD_KEY_COL3__I2C2_SCL
+            | MUX_PAD_CTRL(I2C_PAD_CTRL),
+        .gpio_mode = MX6_PAD_KEY_COL3__GPIO4_IO12
+            | MUX_PAD_CTRL(I2C_PAD_CTRL),
+        .gp = IMX_GPIO_NR(4, 12)
+    },
+    .sda = {
+        .i2c_mode = MX6_PAD_KEY_ROW3__I2C2_SDA
+            | MUX_PAD_CTRL(I2C_PAD_CTRL),
+        .gpio_mode = MX6_PAD_KEY_ROW3__GPIO4_IO13
+            | MUX_PAD_CTRL(I2C_PAD_CTRL),
+        .gp = IMX_GPIO_NR(4, 13)
+    }
+};
+
 static void do_enable_hdmi(struct display_info_t const *dev)
 {
 	imx_enable_hdmi_phy();
@@ -206,7 +202,6 @@ int overwrite_console(void)
 static const struct boot_mode board_boot_modes[] = {
 	/* 4 bit bus width */
 	{"mmc0",	  MAKE_CFGVAL(0x40, 0x30, 0x00, 0x00)},
-//	{"mmc1",	  MAKE_CFGVAL(0x40, 0x20, 0x00, 0x00)},
 	{NULL,	 0},
 };
 #endif
@@ -225,7 +220,7 @@ int board_init(void)
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
 
-	//setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c2_pad_info);
+	setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &i2c2_pad_info);
 
 	return 0;
 }
