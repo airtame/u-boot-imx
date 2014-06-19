@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2013 Freescale Semiconductor, Inc.
+ * Copyright (C) 2014 AIRTAME ApS
  *
- * Configuration settings for the Wandboard.
+ * Configuration settings for the AIRTAME v1 dongle
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -75,6 +75,10 @@
 #define CONFIG_CMD_FAT
 #define CONFIG_DOS_PARTITION
 
+/* Memory test */
+#define CONFIG_CMD_MEMTEST
+#define CONFIG_SYS_ALT_MEMTEST /* more elaborate test */
+
 /* Framebuffer */
 #define CONFIG_VIDEO
 #define CONFIG_VIDEO_IPUV3
@@ -93,12 +97,20 @@
 #define CONFIG_IMX_HDMI
 #define CONFIG_IMX_VIDEO_SKIP
 
+/* I2C */
+#define CONFIG_CMD_I2C
+#define CONFIG_SYS_I2C
+#define CONFIG_SYS_I2C_MXC
+#define CONFIG_SYS_I2C_SPEED        100000
+
+/* Device tree file for the kernel */
 #if defined(CONFIG_MX6DL) || defined(CONFIG_MX6S)
 #define CONFIG_DEFAULT_FDT_FILE		"imx6dl-airtame.dtb"
 #elif defined(CONFIG_MX6Q)
 #define CONFIG_DEFAULT_FDT_FILE		"imx6q-airtame.dtb"
 #endif
 
+/* Default environmental vars */
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"console=ttymxc0\0" \
 	"splashpos=m,m\0" \
