@@ -111,6 +111,7 @@ endif
 obj-$(CONFIG_CMD_FPGAD) += cmd_fpgad.o
 obj-$(CONFIG_CMD_FS_GENERIC) += cmd_fs.o
 obj-$(CONFIG_CMD_FUSE) += cmd_fuse.o
+obj-$(CONFIG_CMD_IMXMAC) += cmd_imxmac.o
 obj-$(CONFIG_CMD_GETTIME) += cmd_gettime.o
 obj-$(CONFIG_CMD_GPIO) += cmd_gpio.o
 obj-$(CONFIG_CMD_I2C) += cmd_i2c.o
