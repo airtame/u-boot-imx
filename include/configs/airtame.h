@@ -64,6 +64,8 @@
 /* Enable IMX6 fuses */
 #define CONFIG_MXC_OCOTP
 #define CONFIG_CMD_FUSE
+#define CONFIG_CMD_IMXMAC
+
 
 #define CONFIG_BOOTDELAY		3
 
@@ -175,6 +177,7 @@
 			"fi;" \
 		"fi\0" \
 	"mmcinit=" \
+        "imxmac get;" \
         "led 0 toggle;" \
 		"mmc dev ${mmcdev};" \
 		"if mmc rescan;then " \
