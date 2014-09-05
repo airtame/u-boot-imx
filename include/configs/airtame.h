@@ -167,7 +167,7 @@
 	"load=fatload\0" \
 	"fixenv=" \
 		"if test -n ${options};then " \
-			"setenv bootargs ${options} ath6kl_core.mac=${wifimac};" \
+			"setenv bootargs ${options};" \
 		"fi;" \
 		"if test -n ${name};then " \
 			"setenv devicetree ${name}.dtb;" \
