@@ -51,6 +51,9 @@ DECLARE_GLOBAL_DATA_PTR;
 	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm | PAD_CTL_HYS |	\
 	PAD_CTL_ODE | PAD_CTL_SRE_FAST)
 
+#define CLOCK_PAD_CTRL (PAD_CTL_PUS_100K_UP |			\
+	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm | PAD_CTL_HYS)
+
 int dram_init(void)
 {
 	gd->ram_size = (phys_size_t)CONFIG_DDR_MB * 1024 * 1024;
@@ -188,6 +191,21 @@ static void setup_display(void)
 }
 #endif /* CONFIG_VIDEO_IPUV3 */
 
+static iomux_v3_cfg_t const clock_pads[] = {
+	MX6_PAD_GPIO_0__CCM_CLKO1 | MUX_PAD_CTRL(CLOCK_PAD_CTRL),
+	MX6_PAD_NANDF_CS2__CCM_CLKO2 | MUX_PAD_CTRL(CLOCK_PAD_CTRL),
+};
+
+static void setup_clock_output(void)
+{
+	struct mxc_ccm_reg *mxc_ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
+
+	imx_iomux_v3_setup_multiple_pads(clock_pads, ARRAY_SIZE(clock_pads));
+
+	writel(0x10E008EU, &mxc_ccm->ccosr);
+	puts("Clock output initialized.\n");
+}
+
 int board_early_init_f(void)
 {
 	setup_iomux_uart();
@@ -220,6 +238,7 @@ int board_late_init(void)
 	add_board_boot_modes(board_boot_modes);
 #endif
 
+	setup_clock_output();
 	return 0;
 }
 
