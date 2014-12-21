@@ -549,7 +549,6 @@ static void rx_handler_command(struct usb_ep *ep, struct usb_request *req)
 		} else {
 			error("buffer overflow\n");
 		}
-		func_cb(ep, req);
 	}
 
 	if (req->status == 0) {
