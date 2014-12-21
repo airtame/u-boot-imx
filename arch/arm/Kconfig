@@ -375,6 +375,9 @@ config TARGET_UDOO
 config TARGET_WANDBOARD
 	bool "Support wandboard"
 
+config TARGET_AIRTAME
+    bool "Support AIRTAME"
+
 config TARGET_TITANIUM
 	bool "Support titanium"
 
@@ -773,6 +776,7 @@ source "board/ttcontrol/vision2/Kconfig"
 source "board/udoo/Kconfig"
 source "board/vpac270/Kconfig"
 source "board/wandboard/Kconfig"
+source "board/airtame/Kconfig"
 source "board/woodburn/Kconfig"
 source "board/xaeniax/Kconfig"
 source "board/zipitz2/Kconfig"
