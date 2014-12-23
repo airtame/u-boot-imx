@@ -363,6 +363,8 @@ static void cb_getvar(struct usb_ep *ep, struct usb_request *req)
 			strncat(response, s, chars_left);
 		else
 			strcpy(response, "FAILValue not set");
+	} else if (!strcmp_l1("partition-type", cmd)) {
+		strncat(response, "raw", chars_left);
 	} else {
 		error("unknown variable: %s\n", cmd);
 		strcpy(response, "FAILVariable not implemented");
