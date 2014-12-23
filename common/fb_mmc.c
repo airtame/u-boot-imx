@@ -27,26 +27,26 @@ void fastboot_okay(const char *s)
 	strncat(response_str, s, RESPONSE_LEN - 4 - 1);
 }
 
-static void write_raw_image(block_dev_desc_t *dev_desc, disk_partition_t *info,
-		const char *part_name, void *buffer,
+static void write_raw_image(block_dev_desc_t *dev_desc,
+		lbaint_t block_offset, void *buffer,
 		unsigned int download_bytes)
 {
 	lbaint_t blkcnt;
 	lbaint_t blks;
 
 	/* determine number of blocks to write */
-	blkcnt = ((download_bytes + (info->blksz - 1)) & ~(info->blksz - 1));
-	blkcnt = blkcnt / info->blksz;
+	blkcnt = ((download_bytes + (dev_desc->blksz - 1)) & ~(dev_desc->blksz - 1));
+	blkcnt = blkcnt / dev_desc->blksz;
 
-	if (blkcnt > info->size) {
-		error("too large for partition: '%s'\n", part_name);
-		fastboot_fail("too large for partition");
+	if ((blkcnt + block_offset) > dev_desc->lba) {
+		error("too large for disk\n");
+		fastboot_fail("too large for disk");
 		return;
 	}
 
 	puts("Flashing Raw Image\n");
 
-	blks = dev_desc->block_write(dev_desc->dev, info->start, blkcnt,
+	blks = dev_desc->block_write(dev_desc->dev, block_offset, blkcnt,
 				     buffer);
 	if (blks != blkcnt) {
 		error("failed writing to device %d\n", dev_desc->dev);
@@ -54,17 +54,16 @@ static void write_raw_image(block_dev_desc_t *dev_desc, disk_partition_t *info,
 		return;
 	}
 
-	printf("........ wrote " LBAFU " bytes to '%s'\n", blkcnt * info->blksz,
-	       part_name);
+	printf("........ wrote " LBAFU " bytes\n", blkcnt * dev_desc->blksz);
 	fastboot_okay("");
 }
 
 void fb_mmc_flash_write(const char *cmd, void *download_buffer,
 			unsigned int download_bytes, char *response)
 {
-	int ret;
 	block_dev_desc_t *dev_desc;
-	disk_partition_t info;
+	lbaint_t offset = 0;
+	char *tmpcmd = (char *)cmd;
 
 	/* initialize the response buffer */
 	response_str = response;
@@ -76,17 +75,9 @@ void fb_mmc_flash_write(const char *cmd, void *download_buffer,
 		return;
 	}
 
-	ret = get_partition_info_efi_by_name(dev_desc, cmd, &info);
-	if (ret) {
-		error("cannot find partition: '%s'\n", cmd);
-		fastboot_fail("cannot find partition");
-		return;
-	}
+	strsep(&tmpcmd, ":");
+	offset = simple_strtoul(tmpcmd, NULL, 0);
 
-	if (is_sparse_image(download_buffer))
-		write_sparse_image(dev_desc, &info, cmd, download_buffer,
-				   download_bytes);
-	else
-		write_raw_image(dev_desc, &info, cmd, download_buffer,
+	write_raw_image(dev_desc, offset, download_buffer,
 				download_bytes);
 }
