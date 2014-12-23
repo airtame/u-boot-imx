@@ -84,7 +84,7 @@
 #define CONFIG_CMD_IMXMAC
 
 
-#define CONFIG_BOOTDELAY		3
+#define CONFIG_BOOTDELAY		 3
 
 #define CONFIG_SYS_MEMTEST_START	0x10000000
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 500 * SZ_1M)
@@ -169,6 +169,7 @@
 #endif
 
 /* Default environmental vars */
+#define CONFIG_PREBOOT                 ""
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"console=ttymxc0\0" \
 	"splashpos=m,m\0" \
@@ -233,7 +234,13 @@
 			"false;" \
 		"fi"
 
-#define CONFIG_BOOTCOMMAND "if run mmcinit;then run bootcmd;fi"
+#define CONFIG_BOOTCOMMAND \
+    "if kbd; then " \
+        "echo \"Recovery mode on.\";" \
+        "fastboot;" \
+    "else " \
+        "if run mmcinit;then run bootcmd;fi;" \
+    "fi"
 
 /* Miscellaneous configurable options */
 #define CONFIG_SYS_LONGHELP

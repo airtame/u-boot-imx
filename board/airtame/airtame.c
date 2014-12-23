@@ -37,6 +37,9 @@
 /* GPIO pins for the LEDs */
 #define AIRTAME_LED_GPIO IMX_GPIO_NR(1, 9)
 
+/* GPIO pin for the buttons */
+#define AIRTAME_BUTTON_GPIO IMX_GPIO_NR(7, 12)
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #define UART_PAD_CTRL  (PAD_CTL_PUS_100K_UP |			\
@@ -50,6 +53,9 @@ DECLARE_GLOBAL_DATA_PTR;
 #define I2C_PAD_CTRL	(PAD_CTL_PUS_100K_UP |			\
 	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm | PAD_CTL_HYS |	\
 	PAD_CTL_ODE | PAD_CTL_SRE_FAST)
+
+#define BUTTON_PAD_CTRL (PAD_CTL_PUS_100K_UP |          \
+    PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm | PAD_CTL_HYS)
 
 int dram_init(void)
 {
@@ -188,11 +194,29 @@ static void setup_display(void)
 }
 #endif /* CONFIG_VIDEO_IPUV3 */
 
+/* Button assignments for J14 */
+static iomux_v3_cfg_t const button_pads[] = {
+    /* Power */
+    MX6_PAD_GPIO_17__GPIO7_IO12    | MUX_PAD_CTRL(BUTTON_PAD_CTRL),
+};
+
+static void setup_buttons(void)
+{
+    imx_iomux_v3_setup_multiple_pads(button_pads,
+                     ARRAY_SIZE(button_pads));
+}
+
+void preboot_keys(void);
+
 int board_early_init_f(void)
 {
 	setup_iomux_uart();
 #if defined(CONFIG_VIDEO_IPUV3)
 	setup_display();
+#endif
+    setup_buttons();
+#ifdef CONFIG_PREBOOT
+    preboot_keys();
 #endif
 	return 0;
 }
@@ -219,7 +243,6 @@ int board_late_init(void)
 #ifdef CONFIG_CMD_BMODE
 	add_board_boot_modes(board_boot_modes);
 #endif
-
 	return 0;
 }
 
@@ -239,6 +262,85 @@ int checkboard(void)
     //status_led_set(STATUS_LED_BOOT, STATUS_LED_BLINKING);
 	return 0;
 }
+
+/* BUTTON Logic below */
+struct button_key {
+    char const  *name;
+    unsigned    gpnum;
+    char        ident;
+};
+
+static struct button_key const buttons[] = {
+    {"power",    AIRTAME_BUTTON_GPIO,  'P'},
+};
+
+/*
+ * generate a null-terminated string containing the buttons pressed
+ * returns number of keys pressed
+ */
+static int read_keys(char *buf)
+{
+    int i, numpressed = 0;
+    for (i = 0; i < ARRAY_SIZE(buttons); i++) {
+        if (!gpio_get_value(buttons[i].gpnum))
+            buf[numpressed++] = buttons[i].ident;
+    }
+    buf[numpressed] = '\0';
+    return numpressed;
+}
+
+static int do_kbd(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+{
+    char envvalue[ARRAY_SIZE(buttons)+1];
+    int numpressed = read_keys(envvalue);
+    setenv("keybd", envvalue);
+    return numpressed == 0;
+}
+
+U_BOOT_CMD(
+    kbd, 1, 1, do_kbd,
+    "Tests for keypresses, sets 'keybd' environment variable",
+    "Returns 0 (true) to shell if key is pressed."
+);
+
+#ifdef CONFIG_PREBOOT
+static char const kbd_magic_prefix[] = "key_magic";
+static char const kbd_command_prefix[] = "key_cmd";
+
+void preboot_keys(void)
+{
+    int numpressed;
+    char keypress[ARRAY_SIZE(buttons)+1];
+    numpressed = read_keys(keypress);
+    if (numpressed) {
+        char *kbd_magic_keys = getenv("magic_keys");
+        char *suffix;
+        /*
+         * loop over all magic keys
+         */
+        for (suffix = kbd_magic_keys; *suffix; ++suffix) {
+            char *keys;
+            char magic[sizeof(kbd_magic_prefix) + 1];
+            sprintf(magic, "%s%c", kbd_magic_prefix, *suffix);
+            keys = getenv(magic);
+            if (keys) {
+                if (!strcmp(keys, keypress))
+                    break;
+            }
+        }
+        if (*suffix) {
+            char cmd_name[sizeof(kbd_command_prefix) + 1];
+            char *cmd;
+            sprintf(cmd_name, "%s%c", kbd_command_prefix, *suffix);
+            cmd = getenv(cmd_name);
+            if (cmd) {
+                setenv("preboot", cmd);
+                return;
+            }
+        }
+    }
+}
+#endif
 
 #ifdef STATUS_LED_GREEN
 void green_led_off(void)
@@ -285,3 +387,4 @@ void __led_set (led_id_t mask, int state)
     }
 #endif
 }
+
