@@ -3,7 +3,7 @@
  *
  * Configuration settings for the AIRTAME v1 dongle
  *
- * SPDX-License-Identifier:	GPL-2.0+
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #ifndef __CONFIG_H
@@ -29,7 +29,7 @@
 #define CONFIG_SYS_GENERIC_BOARD
 
 /* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(10 * SZ_1M)
+#define CONFIG_SYS_MALLOC_LEN           (10 * SZ_1M)
 
 #define CONFIG_DEBUG_EARLY_SERIAL
 
@@ -62,12 +62,12 @@
 
 
 #define CONFIG_MXC_UART
-#define CONFIG_MXC_UART_BASE		UART1_BASE
+#define CONFIG_MXC_UART_BASE            UART1_BASE
 
 /* allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
-#define CONFIG_CONS_INDEX		1
-#define CONFIG_BAUDRATE			115200
+#define CONFIG_CONS_INDEX               1
+#define CONFIG_BAUDRATE                 115200
 
 /* Command definition */
 #include <config_cmd_default.h>
@@ -84,19 +84,19 @@
 #define CONFIG_CMD_IMXMAC
 
 
-#define CONFIG_BOOTDELAY		 3
+#define CONFIG_BOOTDELAY                 3
 
-#define CONFIG_SYS_MEMTEST_START	0x10000000
-#define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 500 * SZ_1M)
-#define CONFIG_LOADADDR			0x12000000
-#define CONFIG_SYS_TEXT_BASE		0x17800000
+#define CONFIG_SYS_MEMTEST_START        0x10000000
+#define CONFIG_SYS_MEMTEST_END          (CONFIG_SYS_MEMTEST_START + 500 * SZ_1M)
+#define CONFIG_LOADADDR                 0x12000000
+#define CONFIG_SYS_TEXT_BASE            0x17800000
 
 /* MMC Configuration */
 
 #define CONFIG_FSL_ESDHC
 #define CONFIG_FSL_USDHC
-#define CONFIG_SYS_FSL_USDHC_NUM	1
-#define CONFIG_SYS_FSL_ESDHC_ADDR	0
+#define CONFIG_SYS_FSL_USDHC_NUM        1
+#define CONFIG_SYS_FSL_ESDHC_ADDR       0
 
 #define CONFIG_MMC
 #define CONFIG_CMD_MMC
@@ -162,122 +162,146 @@
 #define CONFIG_I2C_EDID
 
 /* Device tree file for the kernel */
-#if defined(CONFIG_MX6DL) || defined(CONFIG_MX6S)
-#define CONFIG_DEFAULT_FDT_FILE		"imx6dl-airtame.dtb"
-#elif defined(CONFIG_MX6Q)
-#define CONFIG_DEFAULT_FDT_FILE		"imx6q-airtame.dtb"
-#endif
+#define CONFIG_DEFAULT_FDT_FILE         "airtame1.dtb"
+#define CONFIG_DEFAULT_KERNEL_FILE  "airtame1.img"
 
 /* Default environmental vars */
 #define CONFIG_PREBOOT                 ""
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"console=ttymxc0\0" \
-	"splashpos=m,m\0" \
-	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
-	"mmcpart=1\0" \
-	"environment=uEnv.txt\0" \
-	"devicetree=" CONFIG_DEFAULT_FDT_FILE "\0" \
-	"linux=zImage\0" \
-	"bootargs=console=${console},115200n8 root=/dev/mmcblk0p2 ro rootwait\0" \
-	"fdt_addr=0x18000000\0" \
-	"fdt_high=0xffffffff\0"	  \
-	"initrd_addr=0x19000000\0" \
-	"initrd_high=0xffffffff\0" \
-	"load=fatload\0" \
-	"fixenv=" \
-		"if test -n ${options};then " \
-			"setenv bootargs ${options} ath6kl_core.mac=${wifimac};" \
-		"fi;" \
-		"if test -n ${name};then " \
-			"setenv devicetree ${name}.dtb;" \
-			"setenv linux ${name}.img;" \
-			"if test -n ${initrd};then " \
-				"setenv initrd ${name}.ird;" \
-			"fi;" \
-		"fi\0" \
-	"mmcinit=" \
-        "imxmac get;" \
-        "led 0 toggle;" \
-		"mmc dev ${mmcdev};" \
-		"if mmc rescan;then " \
-			"setenv bootcmd run mmcboot;" \
+        "console=ttymxc0\0" \
+        "splashpos=m,m\0" \
+        "rootfs1_ok=1\0" \
+        "rootfs2_ok=0\0" \
+        "mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
+        "mmcpart=2\0" \
+        "environment=/boot/uEnv.txt\0" \
+        "devicetree=/boot/" CONFIG_DEFAULT_FDT_FILE "\0" \
+        "linux=/boot/" CONFIG_DEFAULT_KERNEL_FILE "\0" \
+        "bootargs=console=${console},115200n8 ro rootwait ath6kl_core.mac=${wifimac}\0" \
+        "fdt_addr=0x18000000\0" \
+        "fdt_high=0xffffffff\0"   \
+        "initrd_addr=0x19000000\0" \
+        "initrd_high=0xffffffff\0" \
+        "load=ext2load\0" \
+        "fixenv=" \
+                "if test -n ${options};then " \
+                        "setenv bootargs ${options} ath6kl_core.mac=${wifimac};" \
+                "fi;" \
+                "setenv bootargs ${bootargs} root=/dev/mmcblk0p${mmcpart};" \
+                "if test -n ${name};then " \
+                        "setenv devicetree /boot/${name}.dtb;" \
+                        "setenv linux /boot/${name}.img;" \
+                        "if test -n ${initrd};then " \
+                                "setenv initrd /boot/${name}.ird;" \
+                        "fi;" \
+                "fi;\0" \
+        "redundroot=" \
+            "if test \"${mmcpart}\" = 2; then " \
+                "if test \"${rootfs1_ok}\" != 1; then " \
+                    "echo \"Wrong rootfs selected. Falling back to rootfs2\";" \
+                    "setenv mmcpart 3;" \
+                    "saveenv;" \
+                "fi;" \
+            "fi;" \
+            "if test \"${mmcpart}\" = 3; then " \
+                "if test \"${rootfs2_ok}\" != 1; then " \
+                    "echo \"Wrong rootfs selected. Falling back to rootfs1\";" \
+                    "setenv mmcpart 2;" \
+                    "saveenv;" \
+                "fi;" \
+            "fi;\0" \
+        "mmcinit=" \
+            "imxmac get;" \
             "led 0 toggle;" \
-			"if ${load} mmc ${mmcdev}:${mmcpart} ${loadaddr} ${environment};then " \
-				"echo Loading ${environment}..;" \
-				"env import -t ${loadaddr} ${filesize};" \
-			"else " \
-				"false;" \
-			"fi;" \
-		"else " \
-			"false;" \
-		"fi\0" \
-	"mmcboot=" \
-        "led 0 toggle;" \
-		"run fixenv;" \
-		"if ${load} mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${devicetree};then " \
-            "led 0 toggle;" \
-			"if ${load} mmc ${mmcdev}:${mmcpart} ${loadaddr} ${linux};then " \
+            "mmc dev ${mmcdev};" \
+            "if mmc rescan;then " \
+                "setenv bootcmd run mmcboot;" \
                 "led 0 toggle;" \
-				"if test -n ${initrd};then " \
-					"if ${load} mmc ${mmcdev}:${mmcpart} ${initrd_addr} ${initrd};then " \
-						"bootz ${loadaddr} ${initrd_addr}:${filesize} ${fdt_addr};" \
-					"else " \
-						"false;" \
-					"fi;" \
-				"else " \
-					"bootz ${loadaddr} - ${fdt_addr};" \
-				"fi;" \
-			"else " \
-				"false;" \
-			"fi;" \
-		"else " \
-			"false;" \
-		"fi"
+                "if ${load} mmc ${mmcdev}:${mmcpart} ${loadaddr} ${environment};then " \
+                    "echo Loading ${environment}..;" \
+                    "env import -t ${loadaddr} ${filesize};" \
+                "else " \
+                    "false;" \
+                "fi;" \
+            "else " \
+                "false;" \
+            "fi\0" \
+        "mmcboot=" \
+            "led 0 toggle;" \
+            "run fixenv;" \
+            "if ${load} mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${devicetree};then " \
+                "led 0 toggle;" \
+                "if ${load} mmc ${mmcdev}:${mmcpart} ${loadaddr} ${linux};then " \
+                    "led 0 toggle;" \
+                    "if test -n ${initrd};then " \
+                        "if ${load} mmc ${mmcdev}:${mmcpart} ${initrd_addr} ${initrd};then " \
+                            "bootz ${loadaddr} ${initrd_addr}:${filesize} ${fdt_addr};" \
+                        "else " \
+                            "false;" \
+                        "fi;" \
+                    "else " \
+                        "bootz ${loadaddr} - ${fdt_addr};" \
+                    "fi;" \
+                "else " \
+                    "false;" \
+                "fi;" \
+            "else " \
+                "false;" \
+            "fi\0"
 
 #define CONFIG_BOOTCOMMAND \
     "if kbd; then " \
         "echo \"Recovery mode on.\";" \
         "fastboot;" \
     "else " \
-        "if run mmcinit;then run bootcmd;fi;" \
+        "run redundroot;" \
+        "if run mmcinit; then " \
+            "run bootcmd;" \
+        "else " \
+            "fastboot;" \
+        "fi;" \
     "fi"
 
 /* Miscellaneous configurable options */
 #define CONFIG_SYS_LONGHELP
 #define CONFIG_SYS_HUSH_PARSER
 #define CONFIG_AUTO_COMPLETE
-#define CONFIG_SYS_CBSIZE		256
+#define CONFIG_SYS_CBSIZE               256
 
 /* Print Buffer Size */
 #define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE + sizeof(CONFIG_SYS_PROMPT) + 16)
-#define CONFIG_SYS_MAXARGS	       16
+#define CONFIG_SYS_MAXARGS             16
 #define CONFIG_SYS_BARGSIZE CONFIG_SYS_CBSIZE
 
-#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
+#define CONFIG_SYS_LOAD_ADDR            CONFIG_LOADADDR
 
 #define CONFIG_CMDLINE_EDITING
 
 /* Physical Memory Map */
-#define CONFIG_NR_DRAM_BANKS		1
-#define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
+#define CONFIG_NR_DRAM_BANKS            1
+#define PHYS_SDRAM                      MMDC0_ARB_BASE_ADDR
 
-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
-#define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
-#define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
+#define CONFIG_SYS_SDRAM_BASE           PHYS_SDRAM
+#define CONFIG_SYS_INIT_RAM_ADDR        IRAM_BASE_ADDR
+#define CONFIG_SYS_INIT_RAM_SIZE        IRAM_SIZE
 
 #define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
+        (CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
 #define CONFIG_SYS_INIT_SP_ADDR \
-	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
+        (CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 
 /* FLASH and environment organization */
 #define CONFIG_SYS_NO_FLASH
 
-#define CONFIG_ENV_SIZE			(8 * 1024)
+#define CONFIG_ENV_SIZE         (1024 * 1024)
+#define CONFIG_ENV_SIZE_REDUND  (1024 * 1024)
 
 #define CONFIG_ENV_IS_IN_MMC
-#define CONFIG_ENV_OFFSET		(6 * 64 * 1024)
-#define CONFIG_SYS_MMC_ENV_DEV		0
+#define CONFIG_SYS_MMC_ENV_DEV          0
+
+#define CONFIG_ENV_OFFSET           (16384*512)
+#define CONFIG_ENV_OFFSET_REDUND    (2*16384*512)
+
 
 #define CONFIG_OF_LIBFDT
 #define CONFIG_CMD_BOOTZ
@@ -310,4 +334,4 @@
 #define CONFIG_PARTITION_UUIDS
 #define CONFIG_EFI_PARTITION
 
-#endif			       /* __CONFIG_H * */
+#endif                         /* __CONFIG_H * */
