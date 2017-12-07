@@ -1,0 +1,12 @@
+if TARGET_AIRTAME_DG2
+
+config SYS_BOARD
+	default "airtame_dg2"
+
+config SYS_VENDOR
+	default "airtame"
+
+config SYS_CONFIG_NAME
+	default "airtame_dg2"
+
+endif
