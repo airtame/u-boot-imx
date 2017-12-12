@@ -122,6 +122,13 @@
 			"bootz ${loadaddr} - ${fdt_addr} \0" \
 		"bootcmd=run bootcmd_sata \0"
 
+#elif defined(CONFIG_TARGET_AIRTAME_DG2)
+
+/*
+ * CONFIG_EXTRA_ENV_SETTINGS and CONFIG_BOOTCOMMAND
+ * are defined in airtame_dg2.h
+ */
+
 #else
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
