@@ -31,6 +31,103 @@
 
 #include "mx6sabre_common.h"
 
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	CONFIG_MFG_ENV_SETTINGS \
+	"epdc_waveform=epdc_splash.bin\0" \
+	"script=/boot/boot.scr\0" \
+	"image=/boot/airtame1.img\0" \
+	"fdt_file=/boot/airtame1.dtb\0" \
+	"fdt_addr=0x18000000\0" \
+	"boot_fdt=try\0" \
+	"ip_dyn=yes\0" \
+	"console=" CONSOLE_DEV "\0" \
+	"dfuspi=dfu 0 sf 0:0:10000000:0\0" \
+	"dfu_alt_info_spl=spl raw 0x400\0" \
+	"dfu_alt_info_img=u-boot raw 0x10000\0" \
+	"dfu_alt_info=spl raw 0x400\0" \
+	"fdt_high=0xffffffff\0"	  \
+	"initrd_high=0xffffffff\0" \
+	"mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0" \
+	"mmcpart=2\0" \
+	"mmcroot=" CONFIG_MMCROOT " rootwait rw\0" \
+	"mmcautodetect=yes\0" \
+	"update_sd_firmware=" \
+		"if test ${ip_dyn} = yes; then " \
+			"setenv get_cmd dhcp; " \
+		"else " \
+			"setenv get_cmd tftp; " \
+		"fi; " \
+		"if mmc dev ${mmcdev}; then "	\
+			"if ${get_cmd} ${update_sd_firmware_filename}; then " \
+				"setexpr fw_sz ${filesize} / 0x200; " \
+				"setexpr fw_sz ${fw_sz} + 1; "	\
+				"mmc write ${loadaddr} 0x2 ${fw_sz}; " \
+			"fi; "	\
+		"fi\0" \
+	EMMC_ENV	  \
+	"smp=" SYS_NOSMP "\0"\
+	"mmcargs=setenv bootargs console=${console},${baudrate} ${smp} " \
+		"root=${mmcroot}\0" \
+  "load=ext4load\0" \
+	"loadbootscript=" \
+		"${load} mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
+	"bootscript=echo Running bootscript from mmc ...; " \
+		"source\0" \
+	"loadimage=${load} mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
+	"loadfdt=${load} mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
+	"mmcboot=echo Booting from mmc ...; " \
+		"run mmcargs; " \
+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+			"if run loadfdt; then " \
+				"bootz ${loadaddr} - ${fdt_addr}; " \
+			"else " \
+				"if test ${boot_fdt} = try; then " \
+					"bootz; " \
+				"else " \
+					"echo WARN: Cannot load the DT; " \
+				"fi; " \
+			"fi; " \
+		"else " \
+			"bootz; " \
+		"fi;\0" \
+	"netargs=setenv bootargs console=${console},${baudrate} ${smp} " \
+		"root=/dev/nfs " \
+		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
+	"netboot=echo Booting from net ...; " \
+		"run netargs; " \
+		"if test ${ip_dyn} = yes; then " \
+			"setenv get_cmd dhcp; " \
+		"else " \
+			"setenv get_cmd tftp; " \
+		"fi; " \
+		"${get_cmd} ${image}; " \
+		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+			"if ${get_cmd} ${fdt_addr} ${fdt_file}; then " \
+				"bootz ${loadaddr} - ${fdt_addr}; " \
+			"else " \
+				"if test ${boot_fdt} = try; then " \
+					"bootz; " \
+				"else " \
+					"echo WARN: Cannot load the DT; " \
+				"fi; " \
+			"fi; " \
+		"else " \
+			"bootz; " \
+		"fi;\0" \
+
+#define CONFIG_BOOTCOMMAND \
+	"mmc dev ${mmcdev};" \
+	"if mmc rescan; then " \
+		"if run loadbootscript; then " \
+		"run bootscript; " \
+		"else " \
+			"if run loadimage; then " \
+				"run mmcboot; " \
+			"else run netboot; " \
+			"fi; " \
+		"fi; " \
+	"else run netboot; fi"
+
 /* Falcon Mode */
 #define CONFIG_SPL_FS_LOAD_ARGS_NAME	"args"
 #define CONFIG_SPL_FS_LOAD_KERNEL_NAME	"uImage"
