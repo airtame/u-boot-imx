@@ -1,12 +1,12 @@
-if TARGET_MX6SABRESD
+if TARGET_AIRTAME_DG2
 
 config SYS_BOARD
-	default "mx6sabresd"
+	default "airtame_dg2"
 
 config SYS_VENDOR
-	default "freescale"
+	default "airtame"
 
 config SYS_CONFIG_NAME
-	default "mx6sabresd"
+	default "airtame_dg2"
 
 endif
