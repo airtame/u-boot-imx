@@ -159,8 +159,14 @@
 
 /* USB Configs */
 #ifdef CONFIG_CMD_USB
+/* Enable BCB support - it's not available in the menuconfig */
+#define CONFIG_BCB_SUPPORT
+#define CONFIG_CMD_READ
+#if 0
+/* This ifdef is because we now define these in the defconfig already */
 #define CONFIG_USB_EHCI
 #define CONFIG_USB_EHCI_MX6
+#endif
 #define CONFIG_EHCI_HCD_INIT_AFTER_RESET
 #define CONFIG_USB_HOST_ETHER
 #define CONFIG_USB_ETHER_ASIX
