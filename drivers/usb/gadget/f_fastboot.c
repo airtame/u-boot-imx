@@ -1475,6 +1475,14 @@ static int _fastboot_parts_load_from_ptable(void)
 	for (i = 0; i <= part_idx; i++)
 		fastboot_flash_add_ptn(&ptable[i]);
 
+  struct fastboot_ptentry mmc0 = { 0 };
+  strcpy(mmc0.name, "misc");
+  mmc0.start = 0;
+  mmc0.length = 7695360;
+  mmc0.partition_id = 10;
+  mmc0.flags = FASTBOOT_PTENTRY_FLAGS_UNERASEABLE;
+  fastboot_flash_add_ptn(&mmc0);
+
 	return 0;
 }
 #endif /*CONFIG_FASTBOOT_STORAGE_SATA || CONFIG_FASTBOOT_STORAGE_MMC*/
