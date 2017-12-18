@@ -124,6 +124,19 @@ config FASTBOOT_MBR_NAME
 	  specified on the "fastboot flash" command line matches the value
 	  defined here. The default target name for updating MBR is "mbr".
 
+config FASTBOOT_FLASH_MMC_OFFSET
+  bool "Enable FASTBOOT MMC FLASH at an offset"
+  depends on FASTBOOT_FLASH
+  help
+    The fastboot flash command will recognize a "virtual" partition
+    of the form mmc0:BLOCKNO, where BLOCKNO specifies an offset in
+    the fastboot MMC device in terms of blocks. Fastboot will then
+    write the contents of the download buffer to the fastboot MMC
+    device at this offset. Sparse downloads are not supported, so
+    you should ensure that the binary specified by your FASTBOOT
+    FLASH command is no greater than the download buffer size
+    (FASTBOOT_BUF_SIZE).
+
 endif # USB_FUNCTION_FASTBOOT
 
 endif # FASTBOOT
