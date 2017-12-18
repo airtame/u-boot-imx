@@ -942,6 +942,78 @@ bool bootloader_gpt_overlay(void)
 		ANDROID_BOOTLOADER_OFFSET < ANDROID_GPT_END);
 }
 
+#if defined(CONFIG_FASTBOOT_FLASH_MMC_OFFSET)
+/*
+ * This enables MMC flashing at a specified block offset.
+ * Android-style "sparse" binary blobs are not supported.
+ */
+static void flash_mmc_at_offset(const unsigned long offset) {
+	const unsigned int blkcnt =
+			(download_bytes + MMC_SATA_BLOCK_SIZE - 1) / MMC_SATA_BLOCK_SIZE;
+	char mmc_dev[128];
+	char mmc_write[128];
+	int mmcret;
+
+	/* command to select MMC device */
+	sprintf(mmc_dev, "mmc dev %x", fastboot_devinfo.dev_id /*slot no*/);
+
+	/* command to write download buffer at the given offset */
+	sprintf(mmc_write, "mmc write 0x%x 0x%lx 0x%x",
+					(unsigned int)interface.transfer_buffer, /* source */
+					offset, /* dest */
+					blkcnt /* length */);
+
+	printf("fastboot: initializing MMC\n");
+	mmcret = run_command(mmc_dev, 0);
+
+	if (mmcret) {
+		printf("fastboot: initializing MMC FAILED!\n");
+		fastboot_fail("init of MMC card failed");
+	} else {
+		printf("fastboot: writing 0x%x bytes to MMC dev %d @ block offset %ld\n",
+					 download_bytes, fastboot_devinfo.dev_id, offset);
+		mmcret = run_command(mmc_write, 0);
+
+		if (mmcret) {
+			printf("fastboot: writing to MMC @ block offset %ld FAILED!\n", offset);
+			fastboot_fail("write MMC at offset failed");
+		} else {
+			printf("fastboot: writing to MMC @ block offset %ld DONE!\n", offset);
+			fastboot_okay("");
+		}
+	}
+}
+
+static void process_flash_mmc_at_offset(const char *cmdbuf) {
+	/*
+	 * NOTE: We don't check the contents of the string before ':',
+	 * but the token after should be a valid offset specified in blocks.
+	 * This means that the following are all equivalent:
+	 *		 fastboot flash				 :2 u-boot.imx
+	 *		 fastboot flash		 mmc0:2 u-boot.imx
+	 *     fastboot flash pumpkin:2 u-boot.imx
+	 * Also note that strsep cannot operate on constant strings, so we make a copy
+	 * called tmpbuf. This pointer is immediately modified by strsep(). But the
+	 * return value of strsep() is the original value of tmpbuf, which we store
+	 * because we have to free that memory at the end.
+	 */
+	char *tmpbuf = strdup(cmdbuf);
+	char *tmpbuf_original = strsep(&tmpbuf, ":"); /* we must free this */
+	printf("fastboot: trying MMC offset flash...\n");
+
+	if (NULL == tmpbuf) {
+		fastboot_fail("invalid offset syntax");
+	} else if (is_sparse_image(interface.transfer_buffer)) {
+		fastboot_fail("mmc offset flash does not support sparse images");
+	} else {
+		unsigned long offset = simple_strtoul(tmpbuf, NULL, 0);
+		flash_mmc_at_offset(offset);
+	}
+
+	free(tmpbuf_original);
+}
+#endif
+
 static void process_flash_mmc(const char *cmdbuf)
 {
 	if (download_bytes) {
@@ -987,7 +1059,11 @@ static void process_flash_mmc(const char *cmdbuf)
 		/* Next is the partition name */
 		ptn = fastboot_flash_find_ptn(cmdbuf);
 		if (ptn == NULL) {
+#if defined(CONFIG_FASTBOOT_FLASH_MMC_OFFSET)
+			process_flash_mmc_at_offset(cmdbuf);
+#else
 			fastboot_fail("partition does not exist");
+#endif
 		} else if ((download_bytes >
 			   ptn->length * MMC_SATA_BLOCK_SIZE) &&
 				!(ptn->flags & FASTBOOT_PTENTRY_FLAGS_WRITE_ENV)) {
@@ -1685,8 +1761,16 @@ struct fastboot_ptentry *fastboot_flash_find_ptn(const char *name)
 		}
 	}
 
+#if defined(CONFIG_FASTBOOT_FLASH_MMC_OFFSET)
+	/*
+	 * Avoid spamming the partition table when
+	 * performing a fastboot flash using MMC offsets.
+	 */
+	printf("fastboot: can't find partition: %s\n", name);
+#else
 	printf("can't find partition: %s, dump the partition table\n", name);
 	fastboot_flash_dump_ptn();
+#endif
 	return 0;
 }
 
