@@ -86,6 +86,7 @@
   "mmcpart=" __stringify(CONFIG_MMCPART) "\0"                                  \
   "set_mmcroot=" /* the Linux MMC device ID is always +1 of the U-boot one */  \
     "setexpr mmcroot ${mmcdev} + 1;\0"                                         \
+  "fastboot_mmcdev=${mmcdev}\0"                                                \
   "environment=/boot/uEnv.txt\0"                                               \
   "devicetree=/boot/airtame-dg2.dtb\0"                                         \
   "linux=/boot/airtame-dg2.img\0"                                              \
