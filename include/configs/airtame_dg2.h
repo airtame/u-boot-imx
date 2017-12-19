@@ -54,6 +54,7 @@
   "rootfs2_ok=0\0"                                                             \
   "mmcdev=" __stringify(CONFIG_SYS_MMC_ENV_DEV) "\0"                           \
   "mmcpart=" __stringify(CONFIG_MMCPART) "\0"                                  \
+  "fastboot_mmcdev=${mmcdev}\0"                                                \
   "environment=/boot/uEnv.txt\0"                                               \
   "devicetree=/boot/airtame-dg2.dtb\0"                                         \
   "linux=/boot/airtame-dg2.img\0"                                              \
