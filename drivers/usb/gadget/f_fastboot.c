@@ -947,7 +947,7 @@ bool bootloader_gpt_overlay(void)
  * This enables MMC flashing at a specified block offset.
  * Android-style "sparse" binary blobs are not supported.
  */
-static void flash_mmc_at_offset(const unsigned long offset) {
+static void flash_mmc_at_offset(const char *target, const unsigned long offset) {
 	const unsigned int blkcnt =
 			(download_bytes + MMC_SATA_BLOCK_SIZE - 1) / MMC_SATA_BLOCK_SIZE;
 	char mmc_dev[128];
@@ -955,7 +955,7 @@ static void flash_mmc_at_offset(const unsigned long offset) {
 	int mmcret;
 
 	/* command to select MMC device */
-	sprintf(mmc_dev, "mmc dev %x", fastboot_devinfo.dev_id /*slot no*/);
+	sprintf(mmc_dev, "mmc dev %s", target);
 
 	/* command to write download buffer at the given offset */
 	sprintf(mmc_write, "mmc write 0x%x 0x%lx 0x%x",
@@ -970,8 +970,8 @@ static void flash_mmc_at_offset(const unsigned long offset) {
 		printf("fastboot: initializing MMC FAILED!\n");
 		fastboot_fail("init of MMC card failed");
 	} else {
-		printf("fastboot: writing 0x%x bytes to MMC dev %d @ block offset %ld\n",
-					 download_bytes, fastboot_devinfo.dev_id, offset);
+		printf("fastboot: writing 0x%x bytes to MMC dev %s @ block offset %ld\n",
+					 download_bytes, target, offset);
 		mmcret = run_command(mmc_write, 0);
 
 		if (mmcret) {
@@ -1006,8 +1006,36 @@ static void process_flash_mmc_at_offset(const char *cmdbuf) {
 	} else if (is_sparse_image(interface.transfer_buffer)) {
 		fastboot_fail("mmc offset flash does not support sparse images");
 	} else {
+		/*
+		 * If the environment variable `fastboot_mmcdev` is set - which it should be
+		 * - then offset-based MMC flashing will use this device. The purpose of
+		 * this is to facilitate initial flashing of eMMC from an SD card U-Boot
+		 * session, which can be done as follows:
+		 *     - flash U-Boot to an SD card;
+		 *     - insert the SD card into board and boot from it;
+		 *     - in the U-Boot console, set the `fastboot_mmcdev` environment
+		 *       variable to the device ID of the eMMC (this is 2 for the i.MX6QP
+		 *       SABRE SD board);
+		 *     - start fastboot and run the flash command - the image will be
+		 *       written to the eMMC;
+		 * If `fastboot_mmcdev` is not set or is invalid, the default fastboot MMC
+		 * device will be used. This is typically the media that the system was
+		 * booted from.
+		 */
+		char target[128] = { 0 };
 		unsigned long offset = simple_strtoul(tmpbuf, NULL, 0);
-		flash_mmc_at_offset(offset);
+
+		const char *fastboot_mmcdev = getenv("fastboot_mmcdev");
+		if (NULL == fastboot_mmcdev) {
+			/* fall back to default fastboot target */
+			snprintf(target, sizeof target, "%d", fastboot_devinfo.dev_id);
+		}
+		else {
+			/* use the environment variable as a target */
+			strncpy(target, fastboot_mmcdev, sizeof target);
+		}
+
+		flash_mmc_at_offset(target, offset);
 	}
 
 	free(tmpbuf_original);
